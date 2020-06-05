@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#zip for moodle installation
+sudo mkdir ecoleta
+sudo rsync -a . ecoleta/ --exclude=ecoleta/
+sudo rm -rf ecoleta/BUILD_PROJECT ecoleta/README.md ecoleta/.git
+sudo cp ecoleta/ /var/www/html/
+sudo rm -rf ecoleta/
+
+
