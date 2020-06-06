@@ -1,16 +1,23 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react'
+import './App.css'
+
+import Header from './Header'
 
 function App() {
+  const [counter, setCounter] = useState(0)     //This returns a array [value, updateValue]
+
+  function handleButtonClick() {
+    setCounter(counter+1)
+  }
+  
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <h1>Hello World</h1>
-      </header>
+    <div>
+      <Header title="Ecoleta" />
+
+      <h1>{counter}</h1>
+      <button type='button' onClick={handleButtonClick}>Raise</button>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
