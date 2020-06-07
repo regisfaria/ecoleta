@@ -1,3 +1,4 @@
+// This always runs first in a react app
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
