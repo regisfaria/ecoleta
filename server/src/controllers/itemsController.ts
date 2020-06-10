@@ -15,7 +15,8 @@ class ItemController {
       return {
         title: item.title,
         id: item.id,
-        image_url: api_address + `uploads/${item.image}`
+        image_url: api_address + `uploads/${item.image}`,
+        expo_image_url: "http://192.168.1.11:3001/" + `uploads/${item.image}`
       }
     })
 
