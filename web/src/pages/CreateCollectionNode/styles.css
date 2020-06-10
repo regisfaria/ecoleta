@@ -201,3 +201,29 @@
   background: #E1FAEC;
   border: 2px solid #34CB79;
 }
+.modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000000;
+  opacity: 0.95;
+}
+.modal h2 {
+  font-size: 40;
+  color: #2FB86E;
+}
+
+.paper {
+  box-shadow: 5px;
+  outline: none;
+  padding: center;
+}
+
+.okCheck {
+  display: flex;
+  color: #2FB86E;
+  width: 220px;
+  height: 100px;
+  position: relative;
+  top: -45px;
+}

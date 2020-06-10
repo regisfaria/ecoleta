@@ -2,7 +2,7 @@ import React, { useEffect, useState, ChangeEvent, FormEvent } from 'react'
 // To create SPA(single page application) redirects | useHistory is to redirect user without button
 import { Link, useHistory } from 'react-router-dom'
 // Icons
-import { FiArrowLeft } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle } from 'react-icons/fi'
 // Map
 import { Map, TileLayer, Marker } from 'react-leaflet'
 // To get a mouse click event on the map
@@ -11,6 +11,8 @@ import { LeafletMouseEvent } from 'leaflet'
 import axios from 'axios'
 // To make API requisitions to my server
 import api from '../../services/api'
+import Modal from '@material-ui/core/Modal';
+import Fade from '@material-ui/core/Fade';
 
 import './styles.css'
 
@@ -43,6 +45,18 @@ const CCN = () => {
   const [selectedUf, setSelectedUF] = useState('0')
   const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0])
   const [selectedItems, setSelectedItems] = useState<number[]>([])
+
+  const [open, setOpen] = React.useState(false);
+  const history = useHistory()
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    
+    history.push('/')
+  }
   
   // Below is to set the current location to the map innitial location for the user
   // but is unused because It dont worked well
@@ -53,8 +67,6 @@ const CCN = () => {
     email: '',
     whatsapp: ''
   })
-
-  const history = useHistory()
   
   // Use effects = Make API requisitions to get information
   // Below function recieves as 1 param what to execute and as 2nd param when
@@ -130,6 +142,8 @@ const CCN = () => {
     }
   }
 
+  
+
   async function handleSubmit(event: FormEvent) {
     // Below is to prevent a page reload
     event.preventDefault()
@@ -151,12 +165,18 @@ const CCN = () => {
       items
     }
 
-    await api.post('collection_node', data)
+    const apiResponse = await api.post('collection_node', data)
 
-    alert('Ponto de coleta criado!')
+    // if we can successfully create a new entry on database, show completition modal
+    if (apiResponse.status === 200) {
+      handleOpen()
+    } else {
+      alert('API ERROR')
+      history.push('/')
+    }
     
     // Return the user to Home page
-    history.push('/')
+    //
   }
   
   // CCN main
@@ -270,6 +290,16 @@ const CCN = () => {
           <button type='submit'>
             Cadastrar ponto de coleta
           </button>
+          <div>
+          <Modal className="modal" open={open} onClose={handleClose} closeAfterTransition>
+            <Fade in={open}>
+              <div className="paper">
+              <FiCheckCircle className='okCheck' />
+              <h2>Cadastro completo!</h2>
+              </div>
+            </Fade>
+          </Modal>
+          </div>
       </form>
     </div>
   )
