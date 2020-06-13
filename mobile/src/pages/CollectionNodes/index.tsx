@@ -1,20 +1,85 @@
-import React from 'react'
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Image } from 'react-native'
+import React, { useState, useEffect} from 'react'
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Image, Alert } from 'react-native'
 import { Feather as Icon } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { useNavigation } from '@react-navigation/native'
 import MapView, { Marker } from 'react-native-maps'
 import { SvgUri } from 'react-native-svg'
+import * as Location from 'expo-location'
+import api from '../../services/api'
+
+interface Item {
+  id: number
+  title: string
+  expo_image_url: string
+}
+
+interface CollectionNode {
+  id: number
+  image: string
+  latitude: number
+  longitude: number
+  nome: string
+}
 
 const CollectionNodes = () => {
   const navigation = useNavigation()
-  
+  const [items, setItems] = useState<Item[]>([])
+  const [collectionNodes, setCollectionNodes] = useState<CollectionNode[]>([])
+  const [selectedItems, setSelectedItems] = useState<Number[]>([])
+  const [initialPos, setInitialPos] = useState<[number, number]>([0, 0])
+
+  useEffect(() => {
+    async function loadPosition() {
+      const { status } = await Location.requestPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Ops...', 'Precisamos de sua permisão para obter sua localização')
+        return
+      }
+
+      const location = await Location.getCurrentPositionAsync()
+
+      const { latitude, longitude } = location.coords
+      
+      setInitialPos([latitude, longitude])
+    }
+
+    loadPosition();
+  }, [])
+
+  useEffect(() => {
+    api.get('items').then(response => {
+      setItems(response.data)
+    })
+  }, [])
+
+  useEffect(() => {
+    api.get('collection_nodes', {
+      params: {
+        uf: "AM"
+      }
+    }).then(response => {
+        setCollectionNodes(response.data)
+    })
+  }, [])
+
   function hadleNavigateBack() {
     navigation.goBack()
   }
 
   function handleNavigateToDetail() {
     navigation.navigate('Detail')
+  }
+
+  function handleSelectedItem(id: number) {
+    const alreadySelected = selectedItems.findIndex(item => item === id)
+
+    if (alreadySelected >= 0) {
+      const filtredItems = selectedItems.filter(item => item !== id)
+      setSelectedItems(filtredItems)
+    } else {
+      setSelectedItems([...selectedItems, id ])
+    }
   }
 
   return (
@@ -28,48 +93,29 @@ const CollectionNodes = () => {
         <Text style={styles.description}>Encontre no mapa um ponto de coleta.</Text>
 
         <View style={styles.mapContainer}>
-          <MapView style={styles.map} initialRegion={{latitude: -28.9540583, longitude: -49.45677, latitudeDelta: 0.014, longitudeDelta: 0.014}}>
-            <Marker style={styles.mapMarker} onPress={handleNavigateToDetail} coordinate={{ latitude:-28.9540583, longitude:-49.45677 }}>
-              <View style={styles.mapMarkerContainer}>
-                <Image style={styles.mapMarkerImage} source={{ uri: 'https://images.unsplash.com/photo-1557333610-90ee4a951ecf?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60'}} />
-                <Text style={styles.mapMarkerTitle}>Mercado</Text>
-              </View>
-            </Marker>
+          { initialPos[0] !== 0 && (
+            <MapView style={styles.map} loadingEnabled={initialPos[0] === 0} initialRegion={{latitude: initialPos[0], longitude: initialPos[1], latitudeDelta: 0.014, longitudeDelta: 0.014}}>
+            {collectionNodes.map(collectionNode => (
+              <Marker key={String(collectionNode.id)} style={styles.mapMarker} onPress={handleNavigateToDetail} coordinate={{ latitude:collectionNode.latitude, longitude:collectionNode.longitude }}>
+                <View style={styles.mapMarkerContainer}>
+                  <Image style={styles.mapMarkerImage} source={{ uri: collectionNode.image }} />
+                  <Text style={styles.mapMarkerTitle}>collectionNode.nome</Text>
+                </View>
+              </Marker>
+            ))}
           </MapView>
+          ) }
         </View>
       </View>
 
       <View style={styles.itemsContainer}>
         <ScrollView horizontal showsVerticalScrollIndicator={false} contentContainerStyle={{paddingHorizontal: 20 }}>
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.item} onPress={() => {}}>
-            <SvgUri width={42} height={42} uri="http://192.168.1.11:3001/uploads/lampadas.svg"/>
-            <Text style={styles.itemTitle}>Lâmpadas</Text>
-          </TouchableOpacity>
+          {items.map(item =>(
+            <TouchableOpacity key={String(item.id)} activeOpacity={0.6} style={[styles.item, selectedItems.includes(item.id) ? styles.selectedItem : {}]} onPress={() => {handleSelectedItem(item.id)}}>
+              <SvgUri width={42} height={42} uri={item.expo_image_url}/>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
     </>
