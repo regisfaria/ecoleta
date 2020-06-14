@@ -68,10 +68,10 @@ class CollectionNodeController {
   }
 
   // Quick note: Below may cause trouble IF we don't pass one of thoses request.query params
-  async index(request: Request, response: Response) {
+  async filtred_nodes(request: Request, response: Response) {
     // cidade, uf, items filters {QUERY PARAMS}
     const { city, uf, items } = request.query
-
+    
     const parsed_items = String(items).split(',').map(item => Number(item.trim()))
 
     const collection_nodes = await knex('collection_node')
@@ -81,7 +81,18 @@ class CollectionNodeController {
     .where('city', String(city))
     .where('uf', String(uf))
     .distinct()
-    .select('collection_node.*')
+    .select('collection_node.*', 'collection_node_items.id')
+
+    return response.json(collection_nodes)
+  }
+
+  // Below where clause is because sometimes I get some empty values, so I'm saying that I don't want empty values
+  async index(request: Request, response: Response) {
+    const collection_nodes = await knex('collection_node')
+    .select('*')
+    .join('collection_node_items', 'collection_node.id', '=', 'collection_node_items.collection_node_id')
+    .whereIn('collection_node_items.item_id', [1, 2, 3, 4, 5, 6])
+    .where('collection_node.nome', '!=', '')
 
     return response.json(collection_nodes)
   }
