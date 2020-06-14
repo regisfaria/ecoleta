@@ -1,16 +1,57 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Feather as Icon} from '@expo/vector-icons'
 import { View, ImageBackground, Text, StyleSheet, Image } from 'react-native'
 import { RectButton } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
+import RNPickerSelect from 'react-native-picker-select'
+import axios from 'axios'
+
+interface IBGEUFResponse {
+  sigla: string
+}
+
+interface IBGECityResponse {
+  nome: string
+}
 
 const Home = () => {
   const navigation = useNavigation()
+  const [ufs, setUfs] = useState<string[]>([])
+  const [cities, setCities] = useState<string[]>([])
+  const [selectedCity, setSelectedCity] = useState('0')
+  const [selectedUf, setSelectedUF] = useState('0')
+  
+  useEffect(() => {
+    axios.get<IBGEUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados').then(response => {
+      const ufInitials = response.data.map(uf => uf.sigla)
+
+      setUfs(ufInitials)
+    })
+  }, [])
+
+  useEffect(() => {
+    if(selectedUf === '0') {
+      return
+    }
+    axios.get<IBGECityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`).then(response => {
+      const ufCities = response.data.map(city => city.nome)
+      
+      setCities(ufCities)
+    })
+  }, [selectedUf])
 
   function handleNavigateToCollectionNodes() {
-    navigation.navigate('CollectionNodes')
+    navigation.navigate('CollectionNodes', { uf: selectedUf, city: selectedCity })
+  }
+
+  function handleSelectedUF(uf: string) {
+    setSelectedUF(uf)
   }
   
+  function handleSelectedCity(city: string) {
+    setSelectedCity(city)
+  }
+
   return (
     //ImageBackground are the same as View, but they recieve a img as param to add it to the background of that 'View'
     //Views work the same as HTML divs
@@ -22,6 +63,34 @@ const Home = () => {
       </View>
 
       <View style={styles.footer}>
+        <View style={styles.input}>
+          <RNPickerSelect
+            onValueChange={value => handleSelectedUF(value)}
+            items={ufs.map(uf => ({
+              value: uf,
+              label: uf
+            }))}
+            placeholder={{
+              label: "Selecione um estado",
+              value: 0
+            }}
+          />
+        </View>
+        
+        <View style={styles.input}>
+          <RNPickerSelect 
+            onValueChange={value => handleSelectedCity(value)}
+            items={cities.map(city => ({
+              label: city,
+              value: city
+            }))}
+            placeholder={{
+              label: "Selecione uma cidade",
+              value: 0
+            }}
+          />
+        </View>
+
         <RectButton style={styles.button} onPress={handleNavigateToCollectionNodes}>
           <View style={styles.buttonIcon}>
             <Text>
@@ -72,10 +141,10 @@ const styles = StyleSheet.create({
   select: {},
 
   input: {
-    height: 60,
+    height: 50,
     backgroundColor: '#FFF',
     borderRadius: 10,
-    marginBottom: 8,
+    marginBottom: 20,
     paddingHorizontal: 24,
     fontSize: 16,
   },

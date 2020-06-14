@@ -2,7 +2,7 @@ import React, { useState, useEffect} from 'react'
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Image, Alert } from 'react-native'
 import { Feather as Icon } from '@expo/vector-icons'
 import Constants from 'expo-constants'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import MapView, { Marker } from 'react-native-maps'
 import { SvgUri } from 'react-native-svg'
 import * as Location from 'expo-location'
@@ -16,19 +16,30 @@ interface Item {
 
 interface CollectionNode {
   id: number
+  collection_node_id: number
   image: string
   latitude: number
   longitude: number
   nome: string
 }
 
+interface CityParams {
+  uf: string
+  city: string
+}
+
 const CollectionNodes = () => {
   const navigation = useNavigation()
+  const route = useRoute()
+
+  const routeParams = route.params as CityParams
+
   const [items, setItems] = useState<Item[]>([])
   const [collectionNodes, setCollectionNodes] = useState<CollectionNode[]>([])
   const [selectedItems, setSelectedItems] = useState<Number[]>([])
   const [initialPos, setInitialPos] = useState<[number, number]>([0, 0])
 
+  // Load user initial position
   useEffect(() => {
     async function loadPosition() {
       const { status } = await Location.requestPermissionsAsync()
@@ -47,28 +58,32 @@ const CollectionNodes = () => {
     loadPosition();
   }, [])
 
+  // Get all api items
   useEffect(() => {
     api.get('items').then(response => {
       setItems(response.data)
     })
   }, [])
 
+  // Load initial collection nodes
   useEffect(() => {
-    api.get('collection_nodes', {
+    api.get('collection_nodes_filtred', {
       params: {
-        uf: "AM"
+        city: routeParams.city,
+        uf: routeParams.uf,
+        items: selectedItems
       }
     }).then(response => {
         setCollectionNodes(response.data)
     })
-  }, [])
+  }, [selectedItems])
 
   function hadleNavigateBack() {
     navigation.goBack()
   }
 
-  function handleNavigateToDetail() {
-    navigation.navigate('Detail')
+  function handleNavigateToDetail(id: number) {
+    navigation.navigate('Detail', { collectionNodeId: id })
   }
 
   function handleSelectedItem(id: number) {
@@ -96,10 +111,10 @@ const CollectionNodes = () => {
           { initialPos[0] !== 0 && (
             <MapView style={styles.map} loadingEnabled={initialPos[0] === 0} initialRegion={{latitude: initialPos[0], longitude: initialPos[1], latitudeDelta: 0.014, longitudeDelta: 0.014}}>
             {collectionNodes.map(collectionNode => (
-              <Marker key={String(collectionNode.id)} style={styles.mapMarker} onPress={handleNavigateToDetail} coordinate={{ latitude:collectionNode.latitude, longitude:collectionNode.longitude }}>
+              <Marker key={String(collectionNode.id)} style={styles.mapMarker} onPress={() => handleNavigateToDetail(collectionNode.collection_node_id)} coordinate={{ latitude:collectionNode.latitude, longitude:collectionNode.longitude }}>
                 <View style={styles.mapMarkerContainer}>
                   <Image style={styles.mapMarkerImage} source={{ uri: collectionNode.image }} />
-                  <Text style={styles.mapMarkerTitle}>collectionNode.nome</Text>
+                  <Text style={styles.mapMarkerTitle}>{collectionNode.nome}</Text>
                 </View>
               </Marker>
             ))}
